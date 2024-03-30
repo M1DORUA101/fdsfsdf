@@ -1,0 +1,2152 @@
+local password = '74108520'
+--============================================================================================
+script_name("UltraHack")
+script_author("AkeGGa")
+script_version("1.0")
+--==================================[Áèáëèîòåêè]==============================================
+require 'moonloader'
+require"lib.sampfuncs"
+
+local dlstatus 		= require('moonloader').download_status
+local fa 			= require 'fAwesome5'
+local vKeys         = require('vKeys')
+local ffi 			= require 'ffi'
+local ev            = require("lib.samp.events")
+local inicfg 		= require('inicfg')
+local vector 		= require 'vector3d'
+local memory 		= require 'memory'
+local mem 			= require 'memory'
+local imgui 		= require('imgui')
+local encoding      = require("encoding")
+encoding.default = 'CP1251'
+local u8 = encoding.UTF8
+
+local window = imgui.ImBool(false)
+local str = imgui.ImBuffer(256)
+local messages = {}
+local color = -1
+local buffer = {0, "test"}
+local sync = false
+
+local ignore = false
+local aiming = false
+local silent = false
+
+local getBonePosition = ffi.cast("int (__thiscall*)(void*, float*, int, bool)", 0x5E4280)
+
+local font = renderCreateFont("Arial", 8, 12)
+
+function GetBodyPartCoordinates(id, handle)
+    local pedptr = getCharPointer(handle)
+    local vec = ffi.new("float[3]")
+    getBonePosition(ffi.cast("void*", pedptr), vec, id, true)
+    return vec[0], vec[1], vec[2]
+end
+
+--> Èìãóè.
+
+local mcheat = imgui.ImBool(false)
+
+local autorem = false -- AutoRem
+
+--> Êîíôèã.
+
+local clickwarp = imgui.ImBool(false)
+local sbivx = imgui.ImBool(false)
+local trigger = imgui.ImBool(false)
+local airbrake = imgui.ImBool(false)
+local Speed = imgui.ImFloat(0)
+local Dist = imgui.ImFloat(0)
+local Fov = imgui.ImFloat(0)
+local cbz5 = imgui.ImBool(false)
+local autokick = imgui.ImBool(false)
+local enginecar = imgui.ImBool(false)
+local legit = imgui.ImBool(false)
+local noReload = imgui.ImBool(false)
+local silentmode = imgui.ImInt(3)
+local pslide = imgui.ImBool(false)
+
+local mainIni = inicfg.load({
+    MultiCheat =
+    {
+		clickwarp = false,
+		sbivx = false,
+		trigger = false,
+		airbrake = false,
+		autokick = false,
+		tfirst = false,
+		tsecond = false,
+		Speed = '0',
+		Dist = '0',
+		triggermode = 3,
+		silentmode = 3,
+		legit = false,
+		enginecar = false,
+		noReload = false,
+		Fov = '0',
+    }
+}, 'MultiCheat_AkeGGa/MultiCheat.ini')
+
+clickwarp.v = mainIni.MultiCheat.clickwarp
+sbivx.v = mainIni.MultiCheat.sbivx
+trigger.v = mainIni.MultiCheat.trigger
+autokick.v = mainIni.MultiCheat.autokick
+airbrake.v = mainIni.MultiCheat.airbrake
+Speed.v = mainIni.MultiCheat.Speed
+enginecar.v = mainIni.MultiCheat.enginecar
+noReload.v = mainIni.MultiCheat.noReload
+Dist.v = mainIni.MultiCheat.Dist
+silentmode.v = mainIni.MultiCheat.silentmode
+Fov.v = mainIni.MultiCheat.Fov
+legit.v = mainIni.MultiCheat.legit
+
+--> Îòïðàâêà â ÷àò
+function msg(text)
+	sampAddChatMessage("[{cd3030}UltraHack{FFFFFF} by {696969}AkeGGa{FFFFFF}] | " ..text, -1)
+end
+
+--> Ìóñîð.
+
+ffi.cdef[[
+    typedef struct _SYSTEMTIME {
+        uint16_t wYear;
+        uint16_t wMonth;
+        uint16_t wDayOfWeek;
+        uint16_t wDay;
+        uint16_t wHour;
+        uint16_t wMinute;
+        uint16_t wSecond;
+        uint16_t wMilliseconds;
+    } SYSTEMTIME;
+
+    void __stdcall GetLocalTime(SYSTEMTIME*);
+]]
+local active = false
+local hour, minute, second, ms
+
+local nametags_dist_slider = imgui.ImInt(250)
+local tdtext_dist_slider = imgui.ImInt(30)
+local chatbubbles_dist_slider = imgui.ImInt(30)
+local fog_dist_slider = imgui.ImInt(350)
+local lods_dist_slider = imgui.ImInt(1000)
+local tfirst = imgui.ImBool(mainIni.MultiCheat.tfirst)
+local tsecond = imgui.ImBool(mainIni.MultiCheat.tsecond)
+local triggermode = imgui.ImInt(mainIni.MultiCheat.triggermode)
+
+local fog_dist = ffi.cast('float *', 0x00B7C4F0)
+local lods_dist = ffi.cast('float *', 0x00858FD8)
+
+local showmenu = 1
+local favskin = 0
+
+local FAKE = {
+    name = '',
+    id = -1,
+}
+
+local MOP = false
+local pow = 0.7
+local poww = 1.9
+
+function ev.onSendCommand(text)
+    if text:match('/id (%d+)') then
+        local playerId = text:match('/id (%d+)')
+        if tonumber(playerId) == FAKE.id then
+            sampAddChatMessage(FAKE.name..' {66CC66}id '..FAKE.id, -1)
+            return false
+        end
+    end
+end
+
+function intToHex(int)
+    local HEX = bit.tohex(int)
+    return HEX
+end
+
+
+aiming = 3
+
+local ClanPlayer = 0
+
+local start, cl = false, false
+
+local socket = require('socket')
+
+local f_ini         = getGameDirectory().."\\moonloader\\config\\MultiCheat_AkeGGa\\settingstime.ini"
+ini = {
+    settings = {
+        activate = false,
+        x = 300,
+        y = 300,
+        color = "FFFFFF",
+        msColor = "Ñ3Ñ3Ñ3",
+        fontsize = 12
+    }
+}
+local config = inicfg.load(nil, f_ini)
+
+--> Main
+function main()
+    repeat wait(0) until isSampAvailable()
+
+	clearAnim()
+	lua_thread.create(ClickWP)
+
+	lua_thread.create(SmoothAimBot)
+	lua_thread.create(SmoothAimBott)
+
+	save()
+
+    if config == nil then
+        local f = io.open(f_ini, "w")
+        f:close()
+        if inicfg.save(ini, f_ini) then
+            config = inicfg.load(nil, f_ini)
+        end
+    end
+
+	imgui.Process = false
+
+	set_dist(3, 350)
+	set_dist(4, 150)
+
+	nametags_server_settings = sampGetServerSettingsPtr() + 39
+	nametags_allowed_dist = 250
+	set_dist(0, 8)
+
+	sampRegisterChatCommand("fake", function()
+        window.v = true
+    end)
+
+	sampRegisterChatCommand("rec", function(arg)
+		if tonumber(arg) then
+			lua_thread.create(function()
+				if sampIsDialogActive() then
+					sampCloseCurrentDialogWithButton(0)
+				end
+
+				printStringNow("Reconnect in ~r~"..arg.."  ~w~sec.", 1600)
+
+				if sampGetGamestate() ~= GAMESTATE_RESTARTING then
+					sampSetGamestate(GAMESTATE_DISCONNECTED)
+					sampDisconnectWithReason(0)
+				end
+
+				wait(arg * 1000)
+				sampSetGamestate(GAMESTATE_WAIT_CONNECT)
+			end)
+		else
+			printStringNow("Wrong ~r~[~w~value~r~]", 1600)
+		end
+	end)
+
+	sampRegisterChatCommand('ctime', cmd_stime)
+
+	sampRegisterChatCommand('skin', function(arg)
+		if #arg == 0 then
+
+		else
+			local skinid = tonumber(arg)
+			if skinid == 0 then
+				favskin = 0
+			else
+				favskin = skinid
+				_, id = sampGetPlayerIdByCharHandle(PLAYER_PED)
+				set_player_skin(id, favskin)
+			end
+		end
+	end)
+
+	sampRegisterChatCommand('mhelp', function()
+		sampShowDialog(9999, "{FFFFFF}Êîìàíäû ìóëüòè-÷èòà by AkeGGa.", '/mcheat - îòêðûòü ìåíþ ìóëòè-÷èòà\n/mhelp - îòêðûòü ýòî ìåíþ\n/fake - ôåéê ÷àòèê äëÿ ïîääåëêè ñêðèíîâ\n/rec - ðåêîííåêò, ïåðåçàéòè â èãðó\n/ctime - âðåìÿ íà ýêðàíå â ìèëëèñåêóíäàõ\n/skin - ñêèí÷åíæåð(âèçóàë)\n/slp - ñëàïíóòü ñàìîãî ñåáÿ\n/sc - êàïòèëêà ïî âðåìåíè\n/autorem - âêëþ÷èòü/âûêëþ÷èòü àâòîìàòè÷åñêèé ðåìåíü\n/wolic - åçäà áåç ïðàâ\n/pcol - ïîêà íå ðàáîòàåò\n/st /sw - ñìåíà âðåìåíè è ïîãîäû\n/fakepl - èçìåíèòü íèê, êëèñò èãðîêó (id, íèê, id èãðîêà ó êîòîðîãî íóæíî âçÿòü öâåò, id ñêèíà)\n/clan - êëàí÷åêåð\n/fix - ïî÷èíèòü àâòî\n/breakecar - ñëîìàòü àâòî èëè çàñïàâíèòü åãî\nAlt + 1 - îòêðûòü ëè÷íûé àâòî\nAlt + 2 - îòêðûòü áàíäû àâòî', "ß ãåé", "", 0)
+	end)
+
+	sampRegisterChatCommand('slp', function()
+		local x, y, z = getCharCoordinates(PLAYER_PED)
+		setCharCoordinates(PLAYER_PED, x , y , z + 1.5)
+	end)
+
+    sampRegisterChatCommand('sc', function(arg)
+        if arg:match('%d+:%d+:%d+:%d+') then
+            hour, minute, second, ms = arg:match('(%d+):(%d+):(%d+):(%d+)')
+            hour, minute, second, ms = tonumber(hour), tonumber(minute), tonumber(second), tonumber(ms)
+            active = true
+        else
+            sampAddChatMessage('÷àñ:ìèíóòà:ñåêóíäà:ìèëèñåêóíäà', -1)
+        end
+    end)
+    time = ffi.new('SYSTEMTIME')
+
+	sampRegisterChatCommand('autorem', function()
+		autorem = not autorem
+		if autorem then
+			autorem = true
+			msg('Autorem - Âêëþ÷¸í.')
+		else
+			autorem = false
+			msg('autorem - Âûêëþ÷åí.')
+		end
+	end)
+
+	sampRegisterChatCommand("wolic", function()
+		wolic = not wolic
+		if wolic then
+			wolic = true
+			msg('WOLIC - Âêëþ÷¸í.')
+		else
+			wolic = false
+			msg('WOLIC - Âûêëþ÷åí.')
+		end
+	end)
+
+    sampRegisterChatCommand('pcol', function(arg)
+        sampAddChatMessage(intToHex(sampGetPlayerColor(tonumber(arg))), sampGetPlayerColor(tonumber(arg)))
+    end)
+
+	sampRegisterChatCommand("st", cmdSetTime)
+	sampRegisterChatCommand("sw", cmdSetWeather)
+
+	sampRegisterChatCommand('fakepl', function(arg)
+        local pattern = '(%d+), (.+), (%d+), (%d+)'
+        if arg:find(pattern) then
+            local playerId, newname, playercolor, skinId = arg:match(pattern)
+            if sampIsPlayerConnected(tonumber(playerId)) then
+                FAKE.id, FAKE.name = tonumber(playerId), newname
+                sampSetPlayerName(tonumber(playerId), newname)
+                sampSetPlayerSkin(tonumber(playerId), tonumber(skinId))
+                sampSetPlayerColor(tonumber(playerId), getPlayerColor(tonumber(playercolor)))
+                --if sampIsPlayerConnected(tonumber(playercolor)) or tonumber(playercolor) == select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)) then
+                --    sampSetPlayerColor(tonumber(playerId), sampGetPlayerColor(tonumber(playercolor)))
+                --    sampAddChatMessage('player color: '..sampGetPlayerColor(tonumber(playercolor)), -1)
+                --else
+                --    sampSetPlayerColor(tonumber(playerId), -1)
+                --end
+
+            else
+                sampAddChatMessage('Èãðîê ñ àéäè "'..tonumber(playerId)..'" íå íàéäåí!', -1)
+            end
+
+        else
+            sampAddChatMessage('Êîìàíäà ââåäåíà íåâåðíî! /fakepl id, íèê, id èãðîêà ó êîòîðîãî íóæíî âçÿòü öâåò, id ñêèíà', -1)
+        end
+
+    end)
+
+	sampRegisterChatCommand('clan', function(arg)
+        local player = '(%d+)'
+        if arg:find(player) then
+			lua_thread.create(function()
+				local maxplayers = sampGetMaxPlayerId(false)
+				local PlayerColor = sampGetPlayerColor(arg)
+				for i = 0, maxplayers do
+					if sampGetPlayerColor(i) == PlayerColor then
+						ClanPlayer = ClanPlayer + 1
+					end
+				end
+				msg('Èãðîêîâ ñ óêàçàííûì êëèñòîì - '..ClanPlayer)
+				ClanPlayer = 0
+			end)
+		else
+			msg('Îøèáêà! Óêàæèòå ID èãðîêà.')
+		end
+	end)
+
+	sampRegisterChatCommand('fix', function(arg)
+		if isCharInAnyCar(PLAYER_PED) then
+			fX,fY,fZ = getCharCoordinates(PLAYER_PED)
+			veh = storeCarCharIsInNoSave(PLAYER_PED)
+			setCarCoordinates(veh, fX, fY, fZ)
+			vehhp = arg:match("(%d+)")
+			lua_thread.create(function()
+				if vehhp ~= nil then
+					setCarHealth(veh, vehhp)
+					setVirtualKeyDown(VK_RETURN, true)
+					wait(20)
+					setVirtualKeyDown(VK_RETURN, false)
+				else
+					setCarHealth(veh, 1000)
+					setVirtualKeyDown(VK_RETURN, true)
+					wait(20)
+					setVirtualKeyDown(VK_RETURN, false)
+				end
+			end)
+		end
+	end)
+
+	sampRegisterChatCommand('breakecar', function()
+		if isCharInAnyCar(PLAYER_PED) then
+			fX,fY,fZ = getCharCoordinates(PLAYER_PED)
+			veh = storeCarCharIsInNoSave(PLAYER_PED)
+			setCarCoordinates(veh, fX, fY, fZ)
+			lua_thread.create(function()
+				setCarHealth(veh, 100)
+				setVirtualKeyDown(VK_RETURN, true)
+				wait(20)
+				setVirtualKeyDown(VK_RETURN, false)
+			end)
+		end
+	end)
+
+	sampRegisterChatCommand('mcheat', function()
+		mcheat.v = not mcheat.v
+	end)
+
+	while true do
+		wait(0)
+
+		if pslide.v and isCharOnFoot(PLAYER_PED) and getCurrentCharWeapon(PLAYER_PED) == 24 and not sampIsChatInputActive() and not sampIsCursorActive() and not sampIsDialogActive() then
+            if not aiming then
+                setGameKeyState(6, 0)
+            end
+            if isKeyDown(vKeys.VK_RBUTTON) and not aiming then
+                lua_thread.create(function() 
+                    silent = true
+                    wait(500)
+                    silent = false
+                end)
+                ignore = true
+                aiming = true
+                wait(200)
+                ignore = false
+                wait(100)
+                if not isKeyDown(vKeys.VK_RBUTTON) then
+                    setGameKeyState(18, 256)
+                end
+            elseif not isKeyDown(vKeys.VK_RBUTTON) and aiming then
+                aiming = false
+            end
+        end
+
+		SmoothAimBott()
+
+		if sampGetPlayerAnimationId(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))) == 1537 and autokick.v then
+            sync = true
+        end
+
+		if isKeyDown(VK_LMENU) and isKeyJustPressed(VK_1) and not sampIsChatInputActive() and not sampIsDialogActive()  then
+			sampSendChat('/lock 1')
+		end
+
+		if isKeyDown(VK_LMENU) and isKeyJustPressed(VK_2) and not sampIsChatInputActive() and not sampIsDialogActive()  then
+			sampSendChat('/lock 4')
+		end
+
+		if isKeyDown(VK_RSHIFT) and isKeyJustPressed(VK_RSHIFT) and not sampIsChatInputActive() and not sampIsDialogActive()  then
+			mcheat.v = not mcheat.v
+		end
+
+		if isKeyJustPressed(VK_F12) and not sampIsChatInputActive() and not sampIsDialogActive()  then
+			thisScript():reload()
+		end
+
+		if favskin ~= 0 then
+			nowskinid = getCharModel(PLAYER_PED)
+			if nowskinid ~= favskin then
+				_, id = sampGetPlayerIdByCharHandle(PLAYER_PED)
+				set_player_skin(id, favskin)
+			end
+		end
+
+		if trigger.v and not isCharOnAnyBike(playerPed) and not isCharDead(playerPed) then
+			local int = readMemory(0xB6F3B8, 4, 0)
+			int=int + 0x79C
+			local intS = readMemory(int, 4, 0)
+				if intS > 0
+				then
+				local lol = 0xB73458
+				lol=lol + 34
+				writeMemory(lol, 4, 255, 0)
+				wait(100)
+				local int = readMemory(0xB6F3B8, 4, 0)
+				int=int + 0x79C
+				writeMemory(int, 4, 0, 0)
+			end
+		end
+
+
+		if time then
+			setTimeOfDay(time, 0)
+		end
+
+	if active then
+		ffi.C.GetLocalTime(time)
+		if time.wMilliseconds >= ms and time.wSecond >= second and time.wMinute >= minute and time.wHour >= hour then
+			for i = 1, 5 do
+				sampSendChat('/capture_biz')
+			end
+			active = false
+		end
+	end
+
+	if airbrake.v and isKeyJustPressed(VK_RSHIFT) and isKeyCheckAvailable() then
+		airbreakz = not airbreakz
+		local zx, cx, zv = getCharCoordinates(PLAYER_PED)
+		airBrkCoords = {
+			zx,
+			cx,
+			zv,
+			0,
+			0,
+			getCharHeading(PLAYER_PED)
+		}
+	end
+
+	if airbrake.v and airbreakz then
+
+		if isCharInAnyCar(PLAYER_PED) then
+			heading = getCarHeading(storeCarCharIsInNoSave(PLAYER_PED))
+		else
+			heading = getCharHeading(PLAYER_PED)
+		end
+
+		bb, bbbb, bbb = getActiveCameraCoordinates()
+		vv, vvvv, vv = getActiveCameraPointAt()
+		mmm = getHeadingFromVector2d(vv - bb, vvvv - bbbb)
+
+		if isCharInAnyCar(PLAYER_PED) then
+			difference = 0.79
+		else
+			difference = 1
+		end
+
+		setCharCoordinates(PLAYER_PED, airBrkCoords[1], airBrkCoords[2], airBrkCoords[3] - difference)
+
+		if isKeyDown(VK_W) and not sampIsChatInputActive() then
+			airBrkCoords[1] = airBrkCoords[1] + 0.5 * math.sin(-math.rad(mmm))
+			airBrkCoords[2] = airBrkCoords[2] + 0.5 * math.cos(-math.rad(mmm))
+
+			if not isCharInAnyCar(PLAYER_PED) then
+				setCharHeading(PLAYER_PED, mmm)
+			else
+				setCarHeading(storeCarCharIsInNoSave(PLAYER_PED), mmm)
+			end
+		elseif isKeyDown(VK_S) and not sampIsChatInputActive() then
+			airBrkCoords[1] = airBrkCoords[1] - 0.5 * math.sin(-math.rad(heading))
+			airBrkCoords[2] = airBrkCoords[2] - 0.5 * math.cos(-math.rad(heading))
+		end
+
+		if isKeyDown(VK_A) and not sampIsChatInputActive() then
+			airBrkCoords[1] = airBrkCoords[1] - 0.5 * math.sin(-math.rad(heading - 90))
+			airBrkCoords[2] = airBrkCoords[2] - 0.5 * math.cos(-math.rad(heading - 90))
+		elseif isKeyDown(VK_D) and not sampIsChatInputActive() then
+			airBrkCoords[1] = airBrkCoords[1] - 0.5 * math.sin(-math.rad(heading + 90))
+			airBrkCoords[2] = airBrkCoords[2] - 0.5 * math.cos(-math.rad(heading + 90))
+		end
+
+		if isKeyDown(VK_UP) and not sampIsChatInputActive() then
+			airBrkCoords[3] = airBrkCoords[3] + 0.5 / 2
+		end
+
+		if isKeyDown(VK_DOWN) and not sampIsChatInputActive() and airBrkCoords[3] > -95 then
+			airBrkCoords[3] = airBrkCoords[3] - 0.5 / 2
+		end
+
+		if isKeyDown(VK_SPACE) and not sampIsChatInputActive() then
+			airBrkCoords[3] = airBrkCoords[3] + 0.5 / 2
+		end
+
+		if isKeyDown(VK_LSHIFT) and not sampIsChatInputActive() and airBrkCoords[3] > -95 then
+			airBrkCoords[3] = airBrkCoords[3] - 0.5 / 2
+		end
+	end
+
+	if enginecar.v then
+		if isCharInAnyCar(PLAYER_PED) then
+			vcar = storeCarCharIsInNoSave(PLAYER_PED)
+			switchCarEngine(vcar, true)
+		end
+	end
+
+	if noReload.v then
+		local weap = getCurrentCharWeapon(PLAYER_PED)
+		local nbs = raknetNewBitStream()
+		raknetBitStreamWriteInt32(nbs, weap)
+		raknetBitStreamWriteInt32(nbs, 0)
+		raknetEmulRpcReceiveBitStream(22, nbs)
+		raknetDeleteBitStream(nbs)
+	end
+
+	if config.settings.activate or moving then
+		if moving then
+			sampSetCursorMode(4)
+			local x, y = getCursorPos()
+			config.settings.x = x
+			config.settings.y = y
+			if isKeyJustPressed(0x01) then
+				moving = false
+				sampSetCursorMode(0)
+				inicfg.save(config, f_ini)
+			end
+		end
+		local date_table = os.date("*t")
+		local ms = tostring(math.ceil(socket.gettime()*1000))
+		local ms = tonumber(string.sub(ms, #ms-2, #ms))
+		local hour, minute, second = date_table.hour, date_table.min, date_table.sec
+		local result = string.format("%02d:%02d:%02d{" ..config.settings.msColor.. "}.%03d", hour, minute, second, ms)
+
+		renderFontDrawText(font, result, config.settings.x, config.settings.y, "0xFF"..config.settings.color)
+	end
+
+	if mcheat.v then
+		imgui.ShowCursor = true
+		imgui.Process = true
+	elseif window.v then
+		imgui.Process = true
+		imgui.ShowCursor = true
+	else
+		imgui.Process = false
+		imgui.ShowCursor = false
+	end
+
+	end
+end
+
+function cmd_stime()
+    lua_thread.create(function()
+        local dtext = "Îòîáðàæàòü âðåìÿ íà ýêðàíå\t" .. (config.settings.activate and "{45d900}ON\n" or "{ff0000}OFF\n") -- 0
+        local dtext = dtext .. "Ðàçìåð øðèôòà:\t" .. config.settings.fontsize .. "\n"                    -- 1
+        local dtext = dtext .. "Öâåò âðåìåíè:\t{" .. config.settings.color .. "}||||||||||\n"           -- 2
+        local dtext = dtext .. "Öâåò ìèëëèñåêóíä:\t{" .. config.settings.msColor .. "}||||||||||\n"     -- 3
+        local dtext = dtext .. "Èçìåíèòü ïîëîæåíèå"                                                      -- 4
+        sampShowDialog(10, "{A77BCA}Time On Screen", dtext, "OK", "Îòìåíà", DIALOG_STYLE_TABLIST)
+        while sampIsDialogActive(10) do wait(0) end
+        local result, button, list, input = sampHasDialogRespond(10)
+
+        if result and button == 1 then
+            if list == 0 then
+                config.settings.activate = not config.settings.activate
+                inicfg.save(config, f_ini)
+                return true
+            end
+
+            if list == 1 then
+                sampShowDialog(11, "{A77BCA}Time On Screen", "{FFFFFF}Ââåäèòå íîâîå çíà÷åíèå øðèôòà:", "OK", "Îòìåíà", DIALOG_STYLE_INPUT)
+                while sampIsDialogActive(11) do wait(0) end
+                local result, button, list, input = sampHasDialogRespond(11)
+                if result then
+                    if tonumber(input) then
+                        config.settings.fontsize = tonumber(input)
+                        font = renderCreateFont('Arial', config.settings.fontsize, 5)
+                        inicfg.save(config, f_ini)
+                        return true
+                    else
+                        msg("Çíà÷åíèå äîëæíî áûòü ÷èñëîì!")
+                        return true
+                    end
+                else
+                    return true
+                end
+            end
+
+            if list == 2 then
+                sampShowDialog(11, "{A77BCA}Time On Screen", "{FFFFFF}Ââåäèòå íîâîå çíà÷åíèå öâåòà:\n{c3c3c3}Íàïðèìåð: AE433D èëè A77BCA (ïî óìîë÷àíèþ FFFFFF)", "OK", "Îòìåíà", DIALOG_STYLE_INPUT)
+                while sampIsDialogActive(11) do wait(0) end
+                local result, button, list, input = sampHasDialogRespond(11)
+                if result then
+                    if not input:match("[à-ÿÀ-ß¨¸]+") then
+                        config.settings.color = input
+                        inicfg.save(config, f_ini)
+                        return true
+                    else
+                        msg("Íåïðàâèëüíûé ââîä.")
+                        return true
+                    end
+                else
+                    return true
+                end
+            end
+
+            if list == 3 then
+                sampShowDialog(11, "{A77BCA}Time On Screen", "{FFFFFF}Ââåäèòå íîâîå çíà÷åíèå öâåòà:\n{c3c3c3}Íàïðèìåð: AE433D èëè A77BCA (ïî óìîë÷àíèþ 858585)", "OK", "Îòìåíà", DIALOG_STYLE_INPUT)
+                while sampIsDialogActive(11) do wait(0) end
+                local result, button, list, input = sampHasDialogRespond(11)
+                if result then
+                    if not input:match("[à-ÿÀ-ß¨¸]+") then
+                        config.settings.msColor = input
+                        inicfg.save(config, f_ini)
+                        return true
+                    else
+                        msg("Íåïðàâèëüíûé ââîä.")
+                        return true
+                    end
+                else
+                    return true
+                end
+            end
+
+            if list == 4 then
+                moving = true
+                msg("Íàæìèòå ËÊÌ äëÿ ñîõðàíåíèÿ ïîëîæåíèÿ.")
+            end
+        end
+    end)
+end
+
+local camModes = {7, 8, 34, 45, 46, 51, 65}
+function ev.onAimSync(playerId, data)
+    for k, v in pairs(camModes) do
+        if data.camMode == v then
+            print("Player " .. playerId .. " use detonator crasher")
+            return false
+        end
+    end
+end
+
+function onWindowMessage(msg, wparam, lparam)
+	if msg == 261 and wparam == 13 then consumeWindowMessage(true, true) end
+end
+
+function ev.onPlayerSync(playerId, data)
+	if data.weapon == 40 and data.keysData == 128 then
+		print("Crasher "..playerId)
+		emul_rpc('onPlayerStreamOut', { playerId })
+		return false
+	end
+end
+
+function emul_rpc(hook, parameters)
+    local bs_io = require 'samp.events.bitstream_io'
+    local handler = require 'samp.events.handlers'
+    local extra_types = require 'samp.events.extra_types'
+    local hooks = {
+
+        --[[ Outgoing rpcs
+        ['onSendEnterVehicle'] = { 'int16', 'bool8', 26 },
+        ['onSendClickPlayer'] = { 'int16', 'int8', 23 },
+        ['onSendClientJoin'] = { 'int32', 'int8', 'string8', 'int32', 'string8', 'string8', 'int32', 25 },
+        ['onSendEnterEditObject'] = { 'int32', 'int16', 'int32', 'vector3d', 27 },
+        ['onSendCommand'] = { 'string32', 50 },
+        ['onSendSpawn'] = { 52 },
+        ['onSendDeathNotification'] = { 'int8', 'int16', 53 },
+        ['onSendDialogResponse'] = { 'int16', 'int8', 'int16', 'string8', 62 },
+        ['onSendClickTextDraw'] = { 'int16', 83 },
+        ['onSendVehicleTuningNotification'] = { 'int32', 'int32', 'int32', 'int32', 96 },
+        ['onSendChat'] = { 'string8', 101 },
+        ['onSendClientCheckResponse'] = { 'int8', 'int32', 'int8', 103 },
+        ['onSendVehicleDamaged'] = { 'int16', 'int32', 'int32', 'int8', 'int8', 106 },
+        ['onSendEditAttachedObject'] = { 'int32', 'int32', 'int32', 'int32', 'vector3d', 'vector3d', 'vector3d', 'int32', 'int32', 116 },
+        ['onSendEditObject'] = { 'bool', 'int16', 'int32', 'vector3d', 'vector3d', 117 },
+        ['onSendInteriorChangeNotification'] = { 'int8', 118 },
+        ['onSendMapMarker'] = { 'vector3d', 119 },
+        ['onSendRequestClass'] = { 'int32', 128 },
+        ['onSendRequestSpawn'] = { 129 },
+        ['onSendPickedUpPickup'] = { 'int32', 131 },
+        ['onSendMenuSelect'] = { 'int8', 132 },
+        ['onSendVehicleDestroyed'] = { 'int16', 136 },
+        ['onSendQuitMenu'] = { 140 },
+        ['onSendExitVehicle'] = { 'int16', 154 },
+        ['onSendUpdateScoresAndPings'] = { 155 },
+        ['onSendGiveDamage'] = { 'int16', 'float', 'int32', 'int32', 115 },
+        ['onSendTakeDamage'] = { 'int16', 'float', 'int32', 'int32', 115 },]]
+
+        -- Incoming rpcs
+        ['onInitGame'] = { 139 },
+        ['onPlayerJoin'] = { 'int16', 'int32', 'bool8', 'string8', 137 },
+        ['onPlayerQuit'] = { 'int16', 'int8', 138 },
+        ['onRequestClassResponse'] = { 'bool8', 'int8', 'int32', 'int8', 'vector3d', 'float', 'Int32Array3', 'Int32Array3', 128 },
+        ['onRequestSpawnResponse'] = { 'bool8', 129 },
+        ['onSetPlayerName'] = { 'int16', 'string8', 'bool8', 11 },
+        ['onSetPlayerPos'] = { 'vector3d', 12 },
+        ['onSetPlayerPosFindZ'] = { 'vector3d', 13 },
+        ['onSetPlayerHealth'] = { 'float', 14 },
+        ['onTogglePlayerControllable'] = { 'bool8', 15 },
+        ['onPlaySound'] = { 'int32', 'vector3d', 16 },
+        ['onSetWorldBounds'] = { 'float', 'float', 'float', 'float', 17 },
+        ['onGivePlayerMoney'] = { 'int32', 18 },
+        ['onSetPlayerFacingAngle'] = { 'float', 19 },
+        --['onResetPlayerMoney'] = { 20 },
+        --['onResetPlayerWeapons'] = { 21 },
+        ['onGivePlayerWeapon'] = { 'int32', 'int32', 22 },
+        --['onCancelEdit'] = { 28 },
+        ['onSetPlayerTime'] = { 'int8', 'int8', 29 },
+        ['onSetToggleClock'] = { 'bool8', 30 },
+        ['onPlayerStreamIn'] = { 'int16', 'int8', 'int32', 'vector3d', 'float', 'int32', 'int8', 32 },
+        ['onSetShopName'] = { 'string256', 33 },
+        ['onSetPlayerSkillLevel'] = { 'int16', 'int32', 'int16', 34 },
+        ['onSetPlayerDrunk'] = { 'int32', 35 },
+        ['onCreate3DText'] = { 'int16', 'int32', 'vector3d', 'float', 'bool8', 'int16', 'int16', 'encodedString4096', 36 },
+        --['onDisableCheckpoint'] = { 37 },
+        ['onSetRaceCheckpoint'] = { 'int8', 'vector3d', 'vector3d', 'float', 38 },
+        --['onDisableRaceCheckpoint'] = { 39 },
+        --['onGamemodeRestart'] = { 40 },
+        ['onPlayAudioStream'] = { 'string8', 'vector3d', 'float', 'bool8', 41 },
+        --['onStopAudioStream'] = { 42 },
+        ['onRemoveBuilding'] = { 'int32', 'vector3d', 'float', 43 },
+        ['onCreateObject'] = { 44 },
+        ['onSetObjectPosition'] = { 'int16', 'vector3d', 45 },
+        ['onSetObjectRotation'] = { 'int16', 'vector3d', 46 },
+        ['onDestroyObject'] = { 'int16', 47 },
+        ['onPlayerDeathNotification'] = { 'int16', 'int16', 'int8', 55 },
+        ['onSetMapIcon'] = { 'int8', 'vector3d', 'int8', 'int32', 'int8', 56 },
+        ['onRemoveVehicleComponent'] = { 'int16', 'int16', 57 },
+        ['onRemove3DTextLabel'] = { 'int16', 58 },
+        ['onPlayerChatBubble'] = { 'int16', 'int32', 'float', 'int32', 'string8', 59 },
+        ['onUpdateGlobalTimer'] = { 'int32', 60 },
+        ['onShowDialog'] = { 'int16', 'int8', 'string8', 'string8', 'string8', 'encodedString4096', 61 },
+        ['onDestroyPickup'] = { 'int32', 63 },
+        ['onLinkVehicleToInterior'] = { 'int16', 'int8', 65 },
+        ['onSetPlayerArmour'] = { 'float', 66 },
+        ['onSetPlayerArmedWeapon'] = { 'int32', 67 },
+        ['onSetSpawnInfo'] = { 'int8', 'int32', 'int8', 'vector3d', 'float', 'Int32Array3', 'Int32Array3', 68 },
+        ['onSetPlayerTeam'] = { 'int16', 'int8', 69 },
+        ['onPutPlayerInVehicle'] = { 'int16', 'int8', 70 },
+        --['onRemovePlayerFromVehicle'] = { 71 },
+        ['onSetPlayerColor'] = { 'int16', 'int32', 72 },
+        ['onDisplayGameText'] = { 'int32', 'int32', 'string32', 73 },
+        --['onForceClassSelection'] = { 74 },
+        ['onAttachObjectToPlayer'] = { 'int16', 'int16', 'vector3d', 'vector3d', 75 },
+        ['onInitMenu'] = { 76 },
+        ['onShowMenu'] = { 'int8', 77 },
+        ['onHideMenu'] = { 'int8', 78 },
+        ['onCreateExplosion'] = { 'vector3d', 'int32', 'float', 79 },
+        ['onShowPlayerNameTag'] = { 'int16', 'bool8', 80 },
+        ['onAttachCameraToObject'] = { 'int16', 81 },
+        ['onInterpolateCamera'] = { 'bool', 'vector3d', 'vector3d', 'int32', 'int8', 82 },
+        ['onGangZoneStopFlash'] = { 'int16', 85 },
+        ['onApplyPlayerAnimation'] = { 'int16', 'string8', 'string8', 'bool', 'bool', 'bool', 'bool', 'int32', 86 },
+        ['onClearPlayerAnimation'] = { 'int16', 87 },
+        ['onSetPlayerSpecialAction'] = { 'int8', 88 },
+        ['onSetPlayerFightingStyle'] = { 'int16', 'int8', 89 },
+        ['onSetPlayerVelocity'] = { 'vector3d', 90 },
+        ['onSetVehicleVelocity'] = { 'bool8', 'vector3d', 91 },
+        ['onServerMessage'] = { 'int32', 'string32', 93 },
+        ['onSetWorldTime'] = { 'int8', 94 },
+        ['onCreatePickup'] = { 'int32', 'int32', 'int32', 'vector3d', 95 },
+        ['onMoveObject'] = { 'int16', 'vector3d', 'vector3d', 'float', 'vector3d', 99 },
+        ['onEnableStuntBonus'] = { 'bool', 104 },
+        ['onTextDrawSetString'] = { 'int16', 'string16', 105 },
+        ['onSetCheckpoint'] = { 'vector3d', 'float', 107 },
+        ['onCreateGangZone'] = { 'int16', 'vector2d', 'vector2d', 'int32', 108 },
+        ['onPlayCrimeReport'] = { 'int16', 'int32', 'int32', 'int32', 'int32', 'vector3d', 112 },
+        ['onGangZoneDestroy'] = { 'int16', 120 },
+        ['onGangZoneFlash'] = { 'int16', 'int32', 121 },
+        ['onStopObject'] = { 'int16', 122 },
+        ['onSetVehicleNumberPlate'] = { 'int16', 'string8', 123 },
+        ['onTogglePlayerSpectating'] = { 'bool32', 124 },
+        ['onSpectatePlayer'] = { 'int16', 'int8', 126 },
+        ['onSpectateVehicle'] = { 'int16', 'int8', 127 },
+        ['onShowTextDraw'] = { 134 },
+        ['onSetPlayerWantedLevel'] = { 'int8', 133 },
+        ['onTextDrawHide'] = { 'int16', 135 },
+        ['onRemoveMapIcon'] = { 'int8', 144 },
+        ['onSetWeaponAmmo'] = { 'int8', 'int16', 145 },
+        ['onSetGravity'] = { 'float', 146 },
+        ['onSetVehicleHealth'] = { 'int16', 'float', 147 },
+        ['onAttachTrailerToVehicle'] = { 'int16', 'int16', 148 },
+        ['onDetachTrailerFromVehicle'] = { 'int16', 149 },
+        ['onSetWeather'] = { 'int8', 152 },
+        ['onSetPlayerSkin'] = { 'int32', 'int32', 153 },
+        ['onSetInterior'] = { 'int8', 156 },
+        ['onSetCameraPosition'] = { 'vector3d', 157 },
+        ['onSetCameraLookAt'] = { 'vector3d', 'int8', 158 },
+        ['onSetVehiclePosition'] = { 'int16', 'vector3d', 159 },
+        ['onSetVehicleAngle'] = { 'int16', 'float', 160 },
+        ['onSetVehicleParams'] = { 'int16', 'int16', 'bool8', 161 },
+        --['onSetCameraBehind'] = { 162 },
+        ['onChatMessage'] = { 'int16', 'string8', 101 },
+        ['onConnectionRejected'] = { 'int8', 130 },
+        ['onPlayerStreamOut'] = { 'int16', 163 },
+        ['onVehicleStreamIn'] = { 164 },
+        ['onVehicleStreamOut'] = { 'int16', 165 },
+        ['onPlayerDeath'] = { 'int16', 166 },
+        ['onPlayerEnterVehicle'] = { 'int16', 'int16', 'bool8', 26 },
+        ['onUpdateScoresAndPings'] = { 'PlayerScorePingMap', 155 },
+        ['onSetObjectMaterial'] = { 84 },
+        ['onSetObjectMaterialText'] = { 84 },
+        ['onSetVehicleParamsEx'] = { 'int16', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 'int8', 24 },
+        ['onSetPlayerAttachedObject'] = { 'int16', 'int32', 'bool', 'int32', 'int32', 'vector3d', 'vector3d', 'vector3d', 'int32', 'int32', 113 }
+
+    }
+    local handler_hook = {
+        ['onInitGame'] = true,
+        ['onCreateObject'] = true,
+        ['onInitMenu'] = true,
+        ['onShowTextDraw'] = true,
+        ['onVehicleStreamIn'] = true,
+        ['onSetObjectMaterial'] = true,
+        ['onSetObjectMaterialText'] = true
+    }
+    local extra = {
+        ['PlayerScorePingMap'] = true,
+        ['Int32Array3'] = true
+    }
+        local hook_table = hooks[hook]
+    if hook_table then
+        local bs = raknetNewBitStream()
+        if not handler_hook[hook] then
+            local max = #hook_table-1
+            if max > 0 then
+                for i = 1, max do
+                    local p = hook_table[i]
+                    if extra[p] then extra_types[p]['write'](bs, parameters[i])
+                    else bs_io[p]['write'](bs, parameters[i]) end
+                end
+            end
+        else
+            if hook == 'onInitGame' then handler.on_init_game_writer(bs, parameters)
+            elseif hook == 'onCreateObject' then handler.on_create_object_writer(bs, parameters)
+            elseif hook == 'onInitMenu' then handler.on_init_menu_writer(bs, parameters)
+            elseif hook == 'onShowTextDraw' then handler.on_show_textdraw_writer(bs, parameters)
+            elseif hook == 'onVehicleStreamIn' then handler.on_vehicle_stream_in_writer(bs, parameters)
+            elseif hook == 'onSetObjectMaterial' then handler.on_set_object_material_writer(bs, parameters, 1)
+            elseif hook == 'onSetObjectMaterialText' then handler.on_set_object_material_writer(bs, parameters, 2) end
+        end
+        raknetEmulRpcReceiveBitStream(hook_table[#hook_table], bs)
+        raknetDeleteBitStream(bs)
+    end
+end
+
+function get_dist(number)
+	if number == 0 then
+		return memory.getfloat(nametags_server_settings)
+	end
+	if number == 1 then
+		return 20
+	end
+	if number == 2 then
+		return 6
+	end
+	if number == 3 then
+		return fog_dist[0]
+	end
+	if number == 4 then
+		return lods_dist[0]
+	end
+end
+
+function set_dist(number, value)
+	value = tonumber(value)
+	if number == 0 then
+		if mcheat.v and sampGetGamestate() == 3 then
+		end
+		if value > nametags_allowed_dist or value < 0 then
+			return memory.setfloat(nametags_server_settings, nametags_allowed_dist)
+		else
+			return memory.setfloat(nametags_server_settings, value)
+		end
+	end
+	if number == 1 then
+		if mcheat.v then
+			for i=0, 2048 do
+				if sampIs3dTextDefined(i) then
+				local text, col, posX, posY, posZ, dist, los, plid, vehid = sampGet3dTextInfoById(i)
+					sampCreate3dTextEx(i, text, col, posX, posY, posZ, value, los, plid, vehid)
+				end
+			end
+		end
+	end
+	if number == 2 then
+		if mcheat.v then
+		end
+	end
+	if number == 3 then
+		if value > 3600.0 or value < 0 then return false end
+		fog_dist[0] = value
+	end
+	if number == 4 then
+		if value > 1000.0 or value < 0 then return false end
+		lods_dist[0] = value
+	end
+end
+
+function cmdSetTime(param)
+	local hour = tonumber(param)
+	if hour ~= nil and hour >= 0 and hour <= 23 then
+	  time = hour
+	  patch_samp_time_set(true)
+	else
+	  patch_samp_time_set(false)
+	  time = nil
+	end
+  end
+
+  function cmdSetWeather(param)
+	local weather = tonumber(param)
+	if weather ~= nil and weather >= 0 and weather <= 45 then
+	  forceWeatherNow(weather)
+	end
+end
+
+function patch_samp_time_set(enable)
+	  if enable and default == nil then
+		  default = readMemory(sampGetBase() + 0x9C0A0, 4, true)
+		  writeMemory(sampGetBase() + 0x9C0A0, 4, 0x000008C2, true)
+	  elseif enable == false and default ~= nil then
+		  writeMemory(sampGetBase() + 0x9C0A0, 4, default, true)
+		  default = nil
+	 end
+end
+
+function isKeyCheckAvailable()
+	return not sampIsChatInputActive() and not sampIsDialogActive() and not isSampfuncsConsoleActive() and not sampIsScoreboardOpen()
+end
+
+function samp_create_sync_data(sync_type, copy_from_player)
+    local ffi = require "ffi"
+    local sampfuncs = require "sampfuncs"
+    local raknet = require "samp.raknet"
+
+    copy_from_player = copy_from_player or true
+    local sync_traits = {
+        player = {"PlayerSyncData", raknet.PACKET.PLAYER_SYNC, sampStorePlayerOnfootData},
+        vehicle = {"VehicleSyncData", raknet.PACKET.VEHICLE_SYNC, sampStorePlayerIncarData},
+        passenger = {"PassengerSyncData", raknet.PACKET.PASSENGER_SYNC, sampStorePlayerPassengerData},
+        aim = {"AimSyncData", raknet.PACKET.AIM_SYNC, sampStorePlayerAimData},
+        trailer = {"TrailerSyncData", raknet.PACKET.TRAILER_SYNC, sampStorePlayerTrailerData},
+        unoccupied = {"UnoccupiedSyncData", raknet.PACKET.UNOCCUPIED_SYNC, nil},
+        bullet = {"BulletSyncData", raknet.PACKET.BULLET_SYNC, nil},
+        spectator = {"SpectatorSyncData", raknet.PACKET.SPECTATOR_SYNC, nil}
+    }
+    local sync_info = sync_traits[sync_type]
+    local data_type = "struct " .. sync_info[1]
+    local data = ffi.new(data_type, {})
+    local raw_data_ptr = tonumber(ffi.cast("uintptr_t", ffi.new(data_type .. "*", data)))
+    if copy_from_player then
+        local copy_func = sync_info[3]
+        if copy_func then
+            local _, player_id
+            if copy_from_player == true then
+                _, player_id = sampGetPlayerIdByCharHandle(playerPed)
+            else
+                player_id = tonumber(copy_from_player)
+            end
+            copy_func(player_id, raw_data_ptr)
+        end
+    end
+    local func_send = function()
+        local bs = raknetNewBitStream()
+        raknetBitStreamWriteInt8(bs, sync_info[2])
+        raknetBitStreamWriteBuffer(bs, raw_data_ptr, ffi.sizeof(data))
+        raknetSendBitStreamEx(bs, sampfuncs.HIGH_PRIORITY, sampfuncs.UNRELIABLE_SEQUENCED, 1)
+        raknetDeleteBitStream(bs)
+    end
+    local mt = {
+        __index = function(t, index)
+            return data[index]
+        end,
+        __newindex = function(t, index, value)
+            data[index] = value
+        end
+    }
+    return setmetatable({send = func_send}, mt)
+end
+
+function ev.onSetPlayerPos(position)
+	if wolic and position then
+		return false
+	end
+end
+
+function ev.onRemovePlayerFromVehicle()
+	if wolic then
+		return false
+	end
+end
+
+--==================================[AimBot]=================================================
+
+function fix(angle)
+    if angle > math.pi then
+        angle = angle - (math.pi * 2)
+    elseif angle < -math.pi then
+        angle = angle + (math.pi * 2)
+    end
+    return angle
+end
+
+function GetNearestPed(fov)
+    local maxDistance = Dist.v
+    local nearestPED = -1
+    for i = 0, sampGetMaxPlayerId(true) do
+        if sampIsPlayerConnected(i) then
+            local find, handle = sampGetCharHandleBySampPlayerId(i)
+            if find then
+                if isCharOnScreen(handle) then
+                    if not isCharDead(handle) then
+                        local _, currentID = sampGetPlayerIdByCharHandle(PLAYER_PED)
+                        local enPos = {GetBodyPartCoordinates(aiming, handle)}
+                        local myPos = {getActiveCameraCoordinates()}
+                        local vector = {myPos[1] - enPos[1], myPos[2] - enPos[2], myPos[3] - enPos[3]}
+                        if isWidescreenOnInOptions() then coefficentZ = 0.0778 else coefficentZ = 0.103 end
+                        local angle = {(math.atan2(vector[2], vector[1]) + 0.04253), (math.atan2((math.sqrt((math.pow(vector[1], 2) + math.pow(vector[2], 2)))), vector[3]) - math.pi / 2 - coefficentZ)}
+                        local view = {fix(representIntAsFloat(readMemory(0xB6F258, 4, false))), fix(representIntAsFloat(readMemory(0xB6F248, 4, false)))}
+                        local distance = math.sqrt((math.pow(angle[1] - view[1], 2) + math.pow(angle[2] - view[2], 2))) * 57.2957795131
+                        if distance > fov then check = true else check = false end
+                        if not check then
+                            local myPos = {getCharCoordinates(PLAYER_PED)}
+                            local distance = math.sqrt((math.pow((enPos[1] - myPos[1]), 2) + math.pow((enPos[2] - myPos[2]), 2) + math.pow((enPos[3] - myPos[3]), 2)))
+                            if (distance < maxDistance) then
+                                nearestPED = handle
+                                maxDistance = distance
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nearestPED
+end
+
+function fix(angle)
+    if angle > math.pi then
+        angle = angle - (math.pi * 2)
+    elseif angle < -math.pi then
+        angle = angle + (math.pi * 2)
+    end
+    return angle
+end
+
+function SmoothAimBot()
+    if cbz5.v and isKeyDown(VK_LBUTTON) then
+        local handle = GetNearestPed(Fov.v)
+        if handle ~= -1 then
+            local myPos = {getActiveCameraCoordinates()}
+            local enPos = {GetBodyPartCoordinates(aiming, handle)} -- 8 ãîëîâà, 3 òóëîâèùå, 42 íîãà, 54 ñòóïíÿ
+            local vector = {myPos[1] - enPos[1], myPos[2] - enPos[2], myPos[3] - enPos[3]}
+            if isWidescreenOnInOptions() then coefficentZ = 0.0778 else coefficentZ = 0.103 end
+            local angle = {(math.atan2(vector[2], vector[1]) + 0.04253), (math.atan2((math.sqrt((math.pow(vector[1], 2) + math.pow(vector[2], 2)))), vector[3]) - math.pi / 2 - coefficentZ)}
+            local view = {fix(representIntAsFloat(readMemory(0xB6F258, 4, false))), fix(representIntAsFloat(readMemory(0xB6F248, 4, false)))}
+            local difference = {angle[1] - view[1], angle[2] - view[2]}
+            local smooth = {difference[1] / Speed.v, difference[2] / Speed.v}
+            setCameraPositionUnfixed((view[2] + smooth[2]), (view[1] + smooth[1]))
+        end
+    end
+    return false
+end
+
+---------------------------------------------------------------------------------------------
+
+function ev.onCreate3DText(id, col, pos, allowed_dist, los, plid, vehid, text)
+	local custom_dist = 8
+	if custom_dist < allowed_dist then
+		return {id, col, pos, custom_dist, los, plid, vehid, text}
+	end
+end
+
+function ev.onPlayerChatBubble(id, col, allowed_dist, dur, text)
+	local custom_dist = 6
+	if custom_dist < allowed_dist then
+		return {id, col, custom_dist, dur, text}
+	end
+end
+
+function set_player_skin(id, skin)
+	local BS = raknetNewBitStream()
+	raknetBitStreamWriteInt32(BS, id)
+	raknetBitStreamWriteInt32(BS, skin)
+	raknetEmulRpcReceiveBitStream(153, BS)
+	raknetDeleteBitStream(BS)
+end
+
+function fpsCorrection()
+	return representIntAsFloat(readMemory(0xB7CB5C, 4, false))
+end
+
+function join_argb(a, r, g, b)
+    local argb = b  -- b
+    argb = bit.bor(argb, bit.lshift(g, 8))  -- g
+    argb = bit.bor(argb, bit.lshift(r, 16)) -- r
+    argb = bit.bor(argb, bit.lshift(a, 24)) -- a
+    return argb
+end
+
+function explode_argb(argb)
+    local a = bit.band(bit.rshift(argb, 24), 0xFF)
+    local r = bit.band(bit.rshift(argb, 16), 0xFF)
+    local g = bit.band(bit.rshift(argb, 8), 0xFF)
+    local b = bit.band(argb, 0xFF)
+    return a, r, g, b
+end
+
+function getPlayerColor(playerId)
+    local col = sampGetPlayerColor(playerId)
+    local a, r, g, b = explode_argb(col)
+
+
+
+    return join_argb(r, g, b, a)
+end
+
+function sampSetPlayerColor(playerId, color)
+    --[[
+        SetPlayerColor - ID: 72
+        Parameters: UINT16 wPlayerID, UINT32 dColor
+    ]]
+    local bs = raknetNewBitStream()
+    raknetBitStreamWriteInt16(bs, playerId)
+    raknetBitStreamWriteInt32(bs, color)
+    raknetEmulRpcReceiveBitStream(72, bs)
+    raknetDeleteBitStream(bs)
+end
+
+function sampSetPlayerName(playerId, name)
+    --[[
+        SetPlayerName - ID: 11
+        Parameters: UINT16 wPlayerID, UINT8 NameLength, char[] Name, UINT8 bSuccess
+        Additional Information: Keep bSuccess parameter as 1.
+    ]]
+    local bs = raknetNewBitStream()
+    raknetBitStreamWriteInt16(bs, playerId)
+    raknetBitStreamWriteInt8(bs, #name)
+    raknetBitStreamWriteString(bs, name)
+    raknetBitStreamWriteInt8(bs, 1)
+    raknetEmulRpcReceiveBitStream(11, bs)
+    raknetDeleteBitStream(bs)
+end
+
+function sampSetPlayerSkin(playerId, skinId)
+    --[[
+        SetPlayerSkin - ID: 153
+        Parameters: UINT32 wPlayerID, UINT32 dSkinID
+    ]]
+    local bs = raknetNewBitStream()
+    raknetBitStreamWriteInt32(bs, playerId)
+    raknetBitStreamWriteInt32(bs, skinId)
+    raknetEmulRpcReceiveBitStream(153, bs)
+    raknetDeleteBitStream(bs)
+end
+
+
+function downloadFile(fileName, file_path, urlfile)
+	if not doesFileExist(file_path) then
+		downloadUrlToFile(urlfile, file_path, function(id, status, p1, p2)
+			if status == dlstatus.STATUSEX_ENDDOWNLOAD then
+				print("Ôàéë - " ..fileName.. " - çàãðóæåí!")
+			end
+		end)
+	end
+end
+
+function runToPoint(tox, toy)
+    local x, y, z = getCharCoordinates(PLAYER_PED)
+    local angle = getHeadingFromVector2d(tox - x, toy - y)
+    local xAngle = math.random(-50, 50)/100
+    setCameraPositionUnfixed(xAngle, math.rad(angle - 90))
+    stopRun = false
+    while getDistanceBetweenCoords2d(x, y, tox, toy) > 0.8 do
+        setGameKeyState(1, -255)
+        setGameKeyState(16, 1)
+        wait(1)
+        x, y, z = getCharCoordinates(PLAYER_PED)
+        angle = getHeadingFromVector2d(tox - x, toy - y)
+        setCameraPositionUnfixed(xAngle, math.rad(angle - 90))
+        if stopRun then
+            stopRun = false
+            break
+        end
+    end
+end
+
+function sendKey(code, scode, key)
+    local _, myId = sampGetPlayerIdByCharHandle(PLAYER_PED)
+    local data = allocateMemory(68)
+    sampStorePlayerOnfootData(myId, data)
+    setStructElement(data, code, scode, key, false)
+    sampSendOnfootData(data)
+    freeMemory(data)
+end
+
+function SearchMarker(posX, posY, posZ, radius, isRace)
+    local ret_posX = 0.0
+    local ret_posY = 0.0
+    local ret_posZ = 0.0
+    local isFind = false
+
+    for id = 0, 31 do
+        local MarkerStruct = 0
+        if isRace then MarkerStruct = 0xC7F168 + id * 56
+        else MarkerStruct = 0xC7DD88 + id * 160 end
+        local MarkerPosX = representIntAsFloat(readMemory(MarkerStruct + 0, 4, false))
+        local MarkerPosY = representIntAsFloat(readMemory(MarkerStruct + 4, 4, false))
+        local MarkerPosZ = representIntAsFloat(readMemory(MarkerStruct + 8, 4, false))
+
+        if MarkerPosX ~= 0.0 or MarkerPosY ~= 0.0 or MarkerPosZ ~= 0.0 then
+            if getDistanceBetweenCoords3d(MarkerPosX, MarkerPosY, MarkerPosZ, posX, posY, posZ) < radius then
+                ret_posX = MarkerPosX
+                ret_posY = MarkerPosY
+                ret_posZ = MarkerPosZ
+                isFind = true
+                radius = getDistanceBetweenCoords3d(MarkerPosX, MarkerPosY, MarkerPosZ, posX, posY, posZ)
+            end
+        end
+    end
+
+    return isFind, ret_posX, ret_posY, ret_posZ
+end
+
+function ev.onSendEnterVehicle(vehId, pass)
+	if autorem then
+		lua_thread.create(function()
+			result, handle = sampGetCarHandleBySampVehicleId(vehId)
+			if result then
+				wait(5000)
+				sampProcessChatInput('/rem')
+				--msg('Ïðîïèñàë - /rem')
+			end
+		end)
+	end
+end
+
+-------------------------------------------------------------
+
+--> Èìãóè
+function imgui.OnDrawFrame()
+	resX, resY = getScreenResolution()
+	if mcheat.v then
+		imgui.SetNextWindowPos(imgui.ImVec2(resX / 2 - 475 / 2, resY / 2 - 412 / 2), imgui.Cond.FirstUseEver)
+		imgui.SetNextWindowSize(imgui.ImVec2(475, 670), imgui.Cond.FirstUseEver)
+		imgui.Begin('', mcheat, imgui.WindowFlags.NoResize + imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoScrollbar)
+
+		imgui.BeginChild("##MainGroup", imgui.ImVec2(475, 670), true, imgui.WindowFlags.NoScrollbar)
+			imgui.BeginGroup()
+				sbox(u8'Àâòî êèê ïðè íîêå', autokick)
+				imgui.TextQuestion(u8'Áóäåò êèêàòü ïðè íîêå')
+				sbox('ClickWarp', clickwarp)
+				imgui.TextQuestion(u8'Àêòèâàöèÿ íà êîë¸ñèêî ìûøêè.')
+				imgui.NewLine()
+				if imgui.RadioButton('Trigger 1', triggermode, 1) then
+					--[[ tsecond.v = false ]]
+					triggermode.v = 1
+					save()
+				end
+				imgui.SameLine()
+				if imgui.RadioButton('Trigger 2', triggermode, 2) then
+					--[[ tfirst.v = false  ]]
+					triggermode.v = 2
+					save()
+				end
+				if imgui.RadioButton(u8'Âûêëþ÷èòü Trigger', triggermode, 3) then
+					triggermode.v = 3
+					save()
+				end
+				imgui.NewLine()
+				if imgui.RadioButton('Silent Aim LITE', silentmode, 1) then
+					--[[ tsecond.v = false ]]
+					silentmode.v = 1
+					save()
+				end
+				if imgui.RadioButton('Silent Aim RAGE', silentmode, 2) then
+					--[[ tfirst.v = false  ]]
+					silentmode.v = 2
+					save()
+				end
+				if imgui.RadioButton(u8'Âûêëþ÷èòü Silent Aim', silentmode, 3) then
+					silentmode.v = 3
+					save()
+				end
+				imgui.NewLine()
+				sbox(u8'Ñáèâ íà [X].', sbivx)
+				imgui.TextQuestion(u8'Íàæèìàÿ íà êíîïêó [X] âû áóäåòå ñíèìàòü ôðèç ñåðâåðà è ñáèâàòü àíèìàöèþ.')
+				sbox(u8'AirBrake', airbrake)
+				imgui.TextQuestion(u8'Àèðáðåéê.')
+				imgui.TextQuestion(u8'Óñêîðåíèå íà àâòî.')
+				imgui.PushItemWidth(90)
+				sbox('LegitAimBot', cbz5)
+				if imgui.SliderFloat("SpeedAim", Speed, 0.0, 50.0, '%.1f') then
+					save()
+				end
+				if imgui.SliderFloat("DistAim", Dist, 0.0, 100.0, '%.1f') then
+					save()
+				end
+				if imgui.SliderFloat("FovAim", Fov, 0.0, 100.0, '%.1f') then
+					save()
+				end
+				if sbox('LegitAimBot V2', legit) then
+					save()
+				end
+			imgui.EndGroup()
+
+			imgui.SameLine(230)
+
+			imgui.BeginGroup()
+				imgui.PushItemWidth(120)
+				if imgui.SliderInt('NAMETAGS', nametags_dist_slider, 0, nametags_allowed_dist) then
+					set_dist(0, nametags_dist_slider.v)
+				end
+				if imgui.SliderInt('3D TEXT', tdtext_dist_slider, 0, 30) then
+					set_dist(1, tdtext_dist_slider.v)
+				end
+				if imgui.SliderInt('CHAT BUBBLES', chatbubbles_dist_slider, 0, 30) then
+					set_dist(2, chatbubbles_dist_slider.v)
+				end
+				if imgui.SliderInt('LODS', lods_dist_slider, 0, 1000) then
+					set_dist(4, lods_dist_slider.v)
+				end
+				sbox(u8'NoReload.', noReload)
+				imgui.TextQuestion(u8'Ñòðåëüáà áåç ïåðåçàðÿäêè.')
+				sbox(u8'Åçäèòü ñ âûêë. äâèãàòåëåì.', enginecar)
+				imgui.TextQuestion(u8'Åçäà áåç áåíçèíà.')
+				if imgui.Button('FIX', imgui.ImVec2(70, 35)) then
+					sampProcessChatInput('/fix')
+				end
+				imgui.SameLine()
+				if imgui.Button('BREAK', imgui.ImVec2(70, 35)) then
+					sampProcessChatInput('/breakecar')
+				end
+				imgui.SameLine()
+				if imgui.Button('FAKE CHAT', imgui.ImVec2(70, 35)) then
+					sampProcessChatInput('/fake')
+					mcheat.v = false
+				end
+				imgui.EndGroup()
+			imgui.EndChild()
+		imgui.End()
+	end
+
+	if window.v then
+        local resX, resY = getScreenResolution()
+        local sizeX, sizeY = 300, 150 -- WINDOW SIZE
+        imgui.SetNextWindowPos(imgui.ImVec2(resX / 2 - sizeX / 2, resY / 2 - sizeY / 2), imgui.Cond.FirstUseEver)
+        imgui.SetNextWindowSize(imgui.ImVec2(sizeX, sizeY), imgui.Cond.FirstUseEver)
+        imgui.Begin('Fake', window)
+        imgui.PushItemWidth(255)
+        if imgui.InputText("##inp1", str) then
+            for k, v in ipairs(messages) do
+                if rlower(v[2]):find(rlower(u8:decode(str.v))) then
+                    buffer = messages[k]
+                end
+            end
+        end
+        if imgui.Button(u8(buffer[2])) then
+            str.v = u8(buffer[2])
+            color = buffer[1]
+        end
+        if imgui.Button("Send") then
+            sampAddChatMessage(u8:decode(str.v), color)
+        end
+        imgui.PopItemWidth()
+        imgui.End()
+    end
+end
+
+--> Ïîäñêàçêà
+function imgui.TextQuestion(text)
+	local war = (fa.ICON_FA_INFO_CIRCLE.. u8(' Ïîäñêàçêà:'))
+	if imgui.IsItemHovered() then
+		imgui.BeginTooltip()
+		imgui.PushTextWrapPos(450)
+		imgui.TextColored(imgui.ImVec4(1.15, 0.18, 0.22, 1), war)
+		imgui.TextUnformatted(text)
+		imgui.PopTextWrapPos()
+		imgui.EndTooltip()
+	end
+end
+
+--> Öåíòðàëèçàöèÿ òåêñòà.
+function imgui.CenterText(text)
+    local width = imgui.GetWindowWidth()
+    local calc = imgui.CalcTextSize(text)
+    imgui.SetCursorPosX( width / 2 - calc.x / 2 )
+    imgui.Text(text)
+end
+
+--> AutoSave
+function sbox(name, imguiname)
+	if imgui.Checkbox(''..name, imguiname) then
+		save()
+	end
+end
+
+--> Èìãóè òåìà.
+function apply_custom_style()
+	local style = imgui.GetStyle()
+	local colors = style.Colors
+	local clr = imgui.Col
+    local ImVec4 = imgui.ImVec4
+    local ImVec2 = imgui.ImVec2
+	style.FramePadding = ImVec2(5, 5)
+	style.WindowTitleAlign = ImVec2(0.5, 0.5)
+	style.WindowPadding = ImVec2(8, 8)
+	style.ChildWindowRounding = 9
+	style.FrameRounding = 6
+
+	colors[clr.Text] = ImVec4(0.95, 0.96, 0.98, 1)
+	colors[clr.TextDisabled] = ImVec4(0.36, 0.42, 0.47, 1)
+	colors[clr.WindowBg] = ImVec4(0.15, 0.18, 0.22, 0)
+	colors[clr.ChildWindowBg] = ImVec4(0.15, 0.18, 0.22, 1)
+	colors[clr.PopupBg] = ImVec4(0.08, 0.08, 0.08, 0.94)
+	colors[clr.Border] = ImVec4(0.43, 0.43, 0.5, 0.5)
+	colors[clr.BorderShadow] = ImVec4(0, 0, 0, 0)
+	colors[clr.FrameBg] = ImVec4(0.2, 0.25, 0.29, 1)
+	colors[clr.FrameBgHovered] = ImVec4(0.12, 0.2, 0.28, 1)
+	colors[clr.FrameBgActive] = ImVec4(0.09, 0.12, 0.14, 1)
+	colors[clr.TitleBg] = ImVec4(0.09, 0.12, 0.14, 0.65)
+	colors[clr.TitleBgCollapsed] = ImVec4(0, 0, 0, 0.51)
+	colors[clr.TitleBgActive] = ImVec4(0.08, 0.1, 0.12, 1)
+	colors[clr.MenuBarBg] = ImVec4(0.15, 0.18, 0.22, 1)
+	colors[clr.ScrollbarBg] = ImVec4(0.02, 0.02, 0.02, 0.39)
+	colors[clr.ScrollbarGrab] = ImVec4(1.15, 0.28, 0.22, 1)
+	colors[clr.ScrollbarGrabHovered] = ImVec4(0.18, 0.22, 0.25, 1)
+	colors[clr.ScrollbarGrabActive] = ImVec4(0.09, 0.21, 0.31, 1)
+	colors[clr.ComboBg] = ImVec4(0.2, 0.25, 0.29, 1)
+	colors[clr.CheckMark] = ImVec4(1.15, 0.28, 0.22, 1)
+	colors[clr.SliderGrab] = ImVec4(1.15, 0.18, 0.22, 1)
+	colors[clr.SliderGrabActive] = ImVec4(1.15, 0.28, 0.22, 1)
+	colors[clr.Button] = ImVec4(0.2, 0.25, 0.29, 1)
+	colors[clr.ButtonHovered] = ImVec4(1.15, 0.18, 0.22, 1)
+	colors[clr.ButtonActive] = ImVec4(1.15, 0.28, 0.22, 1)
+	colors[clr.Header] = ImVec4(0.2, 0.25, 0.29, 0.55)
+	colors[clr.HeaderHovered] = ImVec4(0.26, 0.59, 0.98, 0.8)
+	colors[clr.HeaderActive] = ImVec4(0.26, 0.59, 0.98, 1)
+	colors[clr.ResizeGrip] = ImVec4(0.26, 0.59, 0.98, 0.25)
+	colors[clr.ResizeGripHovered] = ImVec4(0.26, 0.59, 0.98, 0.67)
+	colors[clr.ResizeGripActive] = ImVec4(0.06, 0.05, 0.07, 1)
+	colors[clr.CloseButton] = ImVec4(0.4, 0.39, 0.38, 0.16)
+	colors[clr.CloseButtonHovered] = ImVec4(0.4, 0.39, 0.38, 0.39)
+	colors[clr.CloseButtonActive] = ImVec4(0.4, 0.39, 0.38, 1)
+	colors[clr.PlotLines] = ImVec4(0.61, 0.61, 0.61, 1)
+	colors[clr.PlotLinesHovered] = ImVec4(1, 0.43, 0.35, 1)
+	colors[clr.PlotHistogram] = ImVec4(0.9, 0.7, 0, 1)
+	colors[clr.PlotHistogramHovered] = ImVec4(1, 0.6, 0, 1)
+	colors[clr.TextSelectedBg] = ImVec4(0.25, 1, 0, 0.43)
+	colors[clr.ModalWindowDarkening] = ImVec4(0.8, 0.8, 0.8, 0.15)
+end
+apply_custom_style()
+
+-------------------------------------------------------------
+
+--> Functions
+function clearAnim()
+    lua_thread.create(function()
+        while true do wait(0)
+					if sbivx.v then
+					if isKeyJustPressed(VK_X) and not sampIsCursorActive() then
+					if not isCharInAnyCar(PLAYER_PED) then clearCharTasksImmediately(PLAYER_PED) setPlayerControl(playerHandle, 1) freezeCharPosition(PLAYER_PED, false) end
+				end
+			end
+		end
+  end)
+end
+
+local russian_characters = {
+    [168] = '¨', [184] = '¸', [192] = 'À', [193] = 'Á', [194] = 'Â', [195] = 'Ã', [196] = 'Ä', [197] = 'Å', [198] = 'Æ', [199] = 'Ç', [200] = 'È', [201] = 'É', [202] = 'Ê', [203] = 'Ë', [204] = 'Ì', [205] = 'Í', [206] = 'Î', [207] = 'Ï', [208] = 'Ð', [209] = 'Ñ', [210] = 'Ò', [211] = 'Ó', [212] = 'Ô', [213] = 'Õ', [214] = 'Ö', [215] = '×', [216] = 'Ø', [217] = 'Ù', [218] = 'Ú', [219] = 'Û', [220] = 'Ü', [221] = 'Ý', [222] = 'Þ', [223] = 'ß', [224] = 'à', [225] = 'á', [226] = 'â', [227] = 'ã', [228] = 'ä', [229] = 'å', [230] = 'æ', [231] = 'ç', [232] = 'è', [233] = 'é', [234] = 'ê', [235] = 'ë', [236] = 'ì', [237] = 'í', [238] = 'î', [239] = 'ï', [240] = 'ð', [241] = 'ñ', [242] = 'ò', [243] = 'ó', [244] = 'ô', [245] = 'õ', [246] = 'ö', [247] = '÷', [248] = 'ø', [249] = 'ù', [250] = 'ú', [251] = 'û', [252] = 'ü', [253] = 'ý', [254] = 'þ', [255] = 'ÿ',
+}
+
+function rlower(s)
+    s = tostring(s):lower()
+    local strlen = s:len()
+    if strlen == 0 then return s end
+    s = s:lower()
+    local output = ''
+    for i = 1, strlen do
+        local ch = s:byte(i)
+        if ch >= 192 and ch <= 223 then -- upper russian characters
+            output = output .. russian_characters[ch + 32]
+        elseif ch == 168 then -- ¨
+            output = output .. russian_characters[184]
+        else
+            output = output .. string.char(ch)
+        end
+    end
+    return output
+end
+
+function find(s, p)
+    return string.rlower(s):find(string.rlower(p))
+end
+
+--> ÊëèêÂàðï.
+
+function ClickWP()
+	Matrix3X3 = require "matrix3x3"
+	Vector3D = require "vector3d"
+
+	if not isSampfuncsLoaded() then return end
+
+	initializeRender()
+
+	while true do
+		while isPauseMenuActive() do
+			if cursorEnabled then
+				showCursor(false)
+			end
+			wait(100)
+		end
+
+		if triggermode.v ~= 3 then
+			if triggermode.v == 1 then
+				local _, ped = getCharPlayerIsTargeting(PLAYER_HANDLE)
+				if _ and not isCharDead(ped) then
+					local _, id = sampGetPlayerIdByCharHandle(ped)
+					if _  and not sampIsPlayerPaused(id) then
+						--[[ system.trigger.last = id
+						system.trigger.timeSinceLast = os.time() ]]
+						setGameKeyState(17, 255)
+					end
+				end
+			elseif triggermode.v == 2 then
+				if not isCharOnAnyBike(PLAYER_PED) and not isCharDead(PLAYER_PED) then
+					local int = readMemory(0xB6F3B8, 4, 0)
+					int = int + 0x79C
+					local intS = readMemory(int, 4, 0)
+					if intS > 0 then
+
+						local _, ped = getCharPlayerIsTargeting(PLAYER_HANDLE)
+						if _ and not isCharDead(ped) then
+							local _, id = sampGetPlayerIdByCharHandle(ped)
+							if _  and not sampIsPlayerPaused(id) then
+								--[[ system.trigger.last = id
+								system.trigger.timeSinceLast = os.time() ]]
+							end
+						end
+
+						local a = 0xB73458
+						a = a + 34
+						writeMemory(a, 4, 255, 0)
+						wait(100)
+						local int = readMemory(0xB6F3B8, 4, 0)
+						int = int + 0x79C
+						writeMemory(int, 4, 0, 0)
+					end
+				end
+			end
+		end
+
+		if isKeyDown(VK_MBUTTON) and clickwarp.v then
+			cursorEnabled = not cursorEnabled
+
+			showCursor(cursorEnabled)
+
+			while isKeyDown(VK_MBUTTON) do
+				wait(80)
+			end
+		end
+		if cursorEnabled and not mcheat.v and not window.v then
+			local mode = sampGetCursorMode()
+			if mode == 0 then
+				showCursor(true)
+			end
+			local sx, sy = getCursorPos()
+			local sw, sh = getScreenResolution()
+			if sx >= 0 and sy >= 0 and sx < sw and sy < sh then
+				local posX, posY, posZ = convertScreenCoordsToWorld3D(sx, sy, 700.0)
+				local camX, camY, camZ = getActiveCameraCoordinates()
+				local result, colpoint = processLineOfSight(camX, camY, camZ, posX, posY, posZ, true, true, false, true, false, false, false)
+				if result and colpoint.entity ~= 0 then
+					local normal = colpoint.normal
+					local pos = Vector3D(colpoint.pos[1], colpoint.pos[2], colpoint.pos[3]) - (Vector3D(normal[1], normal[2], normal[3]) * 0.1)
+					local zOffset = 300
+					if normal[3] >= 0.5 then zOffset = 1 end
+						local result, colpoint2 = processLineOfSight(pos.x, pos.y, pos.z + zOffset, pos.x, pos.y, pos.z - 0.3, true, true, false, true, false, false, false)
+						if result then
+							pos = Vector3D(colpoint2.pos[1], colpoint2.pos[2], colpoint2.pos[3] + 1)
+								local curX, curY, curZ  = getCharCoordinates(playerPed)
+								local dist              = getDistanceBetweenCoords3d(curX, curY, curZ, pos.x, pos.y, pos.z)
+								local hoffs             = renderGetFontDrawHeight(font)
+								sy = sy - 2
+								sx = sx - 2
+								renderFontDrawText(font, string.format("%0.2fm", dist), sx, sy - hoffs, 0xEEEEEEEE)
+								local tpIntoCar = nil
+								if colpoint.entityType == 2 then
+									local car = getVehiclePointerHandle(colpoint.entity)
+									if doesVehicleExist(car) and (not isCharInAnyCar(playerPed) or storeCarCharIsInNoSave(playerPed) ~= car) then
+									displayVehicleName(sx, sy - hoffs * 2, getNameOfVehicleModel(getCarModel(car)))
+									local color = 0xAAFFFFFF
+									if isKeyDown(VK_RBUTTON) then
+										tpIntoCar = car
+										color = 0xFFFFFFFF
+									end
+									renderFontDrawText(font2, "Çàæìè ïðàâóþ êíîïêó ìûøè äëÿ òîãî ÷òîá ñåñòü â ìàøèíó.", sx, sy - hoffs * 3, color)
+								end
+							end
+							createPointMarker(pos.x, pos.y, pos.z)
+							if isKeyDown(VK_LBUTTON) and clickwarp.v then
+								if tpIntoCar then
+									if not jumpIntoCar(tpIntoCar) and clickwarp.v then
+										teleportPlayer(pos.x, pos.y, pos.z)
+									end
+								else
+									if isCharInAnyCar(playerPed) then
+										local norm = Vector3D(colpoint.normal[1], colpoint.normal[2], 0)
+										local norm2 = Vector3D(colpoint2.normal[1], colpoint2.normal[2], colpoint2.normal[3])
+										rotateCarAroundUpAxis(storeCarCharIsInNoSave(playerPed), norm2)
+										pos = pos - norm * 1.8
+										pos.z = pos.z - 0.8
+									end
+									teleportPlayer(pos.x, pos.y, pos.z)
+								end
+								removePointMarker()
+								while isKeyDown(keyApply) do wait(0) end
+								showCursor(false)
+							end
+					end
+				end
+			end
+		end
+		wait(0)
+		removePointMarker()
+	end
+end
+
+function initializeRender()
+	font = renderCreateFont("Tahoma", 10, FCR_BOLD + FCR_BORDER)
+	font2 = renderCreateFont("Arial", 8, FCR_ITALICS + FCR_BORDER)
+end
+
+function rotateCarAroundUpAxis(car, vec)
+	local mat = Matrix3X3(getVehicleRotationMatrix(car))
+	local rotAxis = Vector3D(mat.up:get())
+	vec:normalize()
+	rotAxis:normalize()
+	local theta = math.acos(rotAxis:dotProduct(vec))
+	if theta ~= 0 then
+		rotAxis:crossProduct(vec)
+		rotAxis:normalize()
+		rotAxis:zeroNearZero()
+		mat = mat:rotate(rotAxis, -theta)
+	end
+	setVehicleRotationMatrix(car, mat:get())
+end
+
+function readFloatArray(ptr, idx)
+	return representIntAsFloat(readMemory(ptr + idx * 4, 4, false))
+end
+
+function writeFloatArray(ptr, idx, value)
+	writeMemory(ptr + idx * 4, 4, representFloatAsInt(value), false)
+end
+
+function getVehicleRotationMatrix(car)
+	local entityPtr = getCarPointer(car)
+	if entityPtr ~= 0 then
+		local mat = readMemory(entityPtr + 0x14, 4, false)
+		if mat ~= 0 then
+			local rx, ry, rz, fx, fy, fz, ux, uy, uz
+			rx = readFloatArray(mat, 0)
+			ry = readFloatArray(mat, 1)
+			rz = readFloatArray(mat, 2)
+
+			fx = readFloatArray(mat, 4)
+			fy = readFloatArray(mat, 5)
+			fz = readFloatArray(mat, 6)
+
+			ux = readFloatArray(mat, 8)
+			uy = readFloatArray(mat, 9)
+			uz = readFloatArray(mat, 10)
+			return rx, ry, rz, fx, fy, fz, ux, uy, uz
+		end
+	end
+end
+
+function setVehicleRotationMatrix(car, rx, ry, rz, fx, fy, fz, ux, uy, uz)
+	local entityPtr = getCarPointer(car)
+	if entityPtr ~= 0 then
+		local mat = readMemory(entityPtr + 0x14, 4, false)
+		if mat ~= 0 then
+			writeFloatArray(mat, 0, rx)
+			writeFloatArray(mat, 1, ry)
+			writeFloatArray(mat, 2, rz)
+
+			writeFloatArray(mat, 4, fx)
+			writeFloatArray(mat, 5, fy)
+			writeFloatArray(mat, 6, fz)
+
+			writeFloatArray(mat, 8, ux)
+			writeFloatArray(mat, 9, uy)
+			writeFloatArray(mat, 10, uz)
+		end
+	end
+end
+
+function displayVehicleName(x, y, gxt)
+	x, y = convertWindowScreenCoordsToGameScreenCoords(x, y)
+	useRenderCommands(true)
+	setTextWrapx(640.0)
+	setTextProportional(true)
+	setTextJustify(false)
+	setTextScale(0.33, 0.8)
+	setTextDropshadow(0, 0, 0, 0, 0)
+	setTextColour(255, 255, 255, 230)
+	setTextEdge(1, 0, 0, 0, 100)
+	setTextFont(1)
+	displayText(x, y, gxt)
+end
+
+function createPointMarker(x, y, z)
+	pointMarker = createUser3dMarker(x, y, z + 0.3, 4)
+end
+
+function removePointMarker()
+	if pointMarker then
+		removeUser3dMarker(pointMarker)
+		pointMarker = nil
+	end
+end
+
+function getCarFreeSeat(car)
+	if doesCharExist(getDriverOfCar(car)) then
+		local maxPassengers = getMaximumNumberOfPassengers(car)
+		for i = 0, maxPassengers do
+			if isCarPassengerSeatFree(car, i) then
+				return i + 1
+			end
+		end
+		return nil -- no free seats
+	else
+		return 0 -- driver seat
+	end
+end
+
+function jumpIntoCar(car)
+	local seat = getCarFreeSeat(car)
+	if not seat then return false end                         -- no free seats
+	if seat == 0 then warpCharIntoCar(playerPed, car)         -- driver seat
+	else warpCharIntoCarAsPassenger(playerPed, car, seat - 1) -- passenger seat
+	end
+	restoreCameraJumpcut()
+	return true
+end
+
+function teleportPlayer(x, y, z)
+	if isCharInAnyCar(playerPed) then
+		setCharCoordinates(playerPed, x, y, z)
+	end
+	setCharCoordinatesDontResetAnim(playerPed, x, y, z)
+end
+
+function setCharCoordinatesDontResetAnim(char, x, y, z)
+	if doesCharExist(char) then
+		local ptr = getCharPointer(char)
+		setEntityCoordinates(ptr, x, y, z)
+	end
+end
+
+function onReceivePacket(id, bs)
+    if id == 215 then
+        raknetBitStreamIgnoreBits(bs, 8)
+        if raknetBitStreamReadInt16(bs) == 2 then
+            local a = raknetBitStreamReadInt32(bs)
+            local e = {}
+            for i = 1, raknetBitStreamReadInt8(bs) do
+                local l = raknetBitStreamReadInt32(bs)
+                table.insert(e, raknetBitStreamReadString(bs, l))
+            end
+            if table.getn(e) > 0 then
+                local text = e[1]
+                if text == 'Auth' then
+                    login()
+                end
+            end
+        end
+    end
+end
+
+function login()
+    local bs = raknetNewBitStream()
+    raknetBitStreamWriteInt8(bs, 215)
+    raknetBitStreamWriteInt16(bs, 2)
+    raknetBitStreamWriteInt32(bs, 0)
+    raknetBitStreamWriteInt32(bs, 18)
+    raknetBitStreamWriteString(bs, 'OnPlayerStartLogin')
+    raknetBitStreamWriteInt32(bs, 2)
+    raknetBitStreamWriteInt8(bs, 115)
+    raknetBitStreamWriteInt16(bs, password:len())
+    raknetBitStreamWriteInt16(bs, 0)
+    raknetBitStreamWriteString(bs, password)
+    raknetSendBitStream(bs)
+    raknetDeleteBitStream(bs)
+end
+
+function setEntityCoordinates(entityPtr, x, y, z)
+	if entityPtr ~= 0 then
+		local matrixPtr = readMemory(entityPtr + 0x14, 4, false)
+		if matrixPtr ~= 0 then
+			local posPtr = matrixPtr + 0x30
+			writeMemory(posPtr + 0, 4, representFloatAsInt(x), false) -- X
+			writeMemory(posPtr + 4, 4, representFloatAsInt(y), false) -- Y
+			writeMemory(posPtr + 8, 4, representFloatAsInt(z), false) -- Z
+		end
+	end
+end
+
+function showCursor(toggle)
+	if toggle then
+		sampSetCursorMode(CMODE_LOCKCAM)
+	else
+		sampToggleCursor(false)
+	end
+	cursorEnabled = toggle
+end
+
+--> Åñëè ñêðèïò êðàøíåòñÿ.
+function onScriptTerminate(script, quit)
+	if script == thisScript() then
+		imgui.Process = false
+		imgui.ShowCursor = false
+		showCursor(false, false)
+	end
+end
+
+--> Áûñòðîå ñîõðàíåíèå â ini
+function save()
+    inicfg.save({
+        MultiCheat =
+        {
+			clickwarp = clickwarp.v,
+			sbivx = sbivx.v,
+			trigger = trigger.v,
+			airbrake = airbrake.v,
+			triggermode = triggermode.v,
+			tfirst = tfirst.v,
+			tsecond = tsecond.v,
+			Speed = Speed.v,
+			silentmode = silentmode.v,
+			legit = legit.v,
+			autokick = autokick.v,
+			enginecar = enginecar.v,
+			noReload = noReload.v,
+			Dist = Dist.v,
+			Fov = Fov.v,
+        }
+    }, 'MultiCheat_AkeGGa/MultiCheat.ini')
+end
+--ôèíàë |ÀkåGGà|
+
+function samp_create_sync_data(sync_type, copy_from_player)
+    local ffi = require "ffi"
+    local sampfuncs = require "sampfuncs"
+    local raknet = require "samp.raknet"
+
+    copy_from_player = copy_from_player or true
+    local sync_traits = {
+        player = {"PlayerSyncData", raknet.PACKET.PLAYER_SYNC, sampStorePlayerOnfootData},
+        vehicle = {"VehicleSyncData", raknet.PACKET.VEHICLE_SYNC, sampStorePlayerIncarData},
+        passenger = {"PassengerSyncData", raknet.PACKET.PASSENGER_SYNC, sampStorePlayerPassengerData},
+        aim = {"AimSyncData", raknet.PACKET.AIM_SYNC, sampStorePlayerAimData},
+        trailer = {"TrailerSyncData", raknet.PACKET.TRAILER_SYNC, sampStorePlayerTrailerData},
+        unoccupied = {"UnoccupiedSyncData", raknet.PACKET.UNOCCUPIED_SYNC, nil},
+        bullet = {"BulletSyncData", raknet.PACKET.BULLET_SYNC, nil},
+        spectator = {"SpectatorSyncData", raknet.PACKET.SPECTATOR_SYNC, nil}
+    }
+    local sync_info = sync_traits[sync_type]
+    local data_type = "struct " .. sync_info[1]
+    local data = ffi.new(data_type, {})
+    local raw_data_ptr = tonumber(ffi.cast("uintptr_t", ffi.new(data_type .. "*", data)))
+    if copy_from_player then
+        local copy_func = sync_info[3]
+        if copy_func then
+            local _, player_id
+            if copy_from_player == true then
+                _, player_id = sampGetPlayerIdByCharHandle(playerPed)
+            else
+                player_id = tonumber(copy_from_player)
+            end
+            copy_func(player_id, raw_data_ptr)
+        end
+    end
+    local func_send = function()
+        local bs = raknetNewBitStream()
+        raknetBitStreamWriteInt8(bs, sync_info[2])
+        raknetBitStreamWriteBuffer(bs, raw_data_ptr, ffi.sizeof(data))
+        raknetSendBitStreamEx(bs, sampfuncs.HIGH_PRIORITY, sampfuncs.UNRELIABLE_SEQUENCED, 1)
+        raknetDeleteBitStream(bs)
+    end
+    local mt = {
+        __index = function(t, index)
+            return data[index]
+        end,
+        __newindex = function(t, index, value)
+            data[index] = value
+        end
+    }
+    return setmetatable({send = func_send}, mt)
+end
+
+function ev.onSendBulletSync(data)
+        if ped ~= -1 then
+            local _, id = sampGetPlayerIdByCharHandle(ped)
+            if _ then
+                local x, y, z = getCharCoordinates(ped)
+                data.targetType = 1
+                data.targetId = id
+                data.target = {x = x, y = y, z = z}
+                sampSendGiveDamage(id, 46.2, 24, 3)
+            end
+        end
+        silent = false
+
+end
+
+function rand()
+    return math.random(-50, 50) / 100
+end
+
+function damageRPC(id)
+    lua_thread.create(function() 
+        wait(0)
+        local data = getWeaponInfoById(getCurrentCharWeapon(PLAYER_PED))
+        if data ~= nil then
+            sampSendGiveDamage(id, data.dmg, data.id, 3)
+        end
+    end)
+end
+
+function SmoothAimBott()
+    local speed = 100
+    local fov = 20
+    if legit.v and isKeyDown(vKeys.VK_RBUTTON) and not select(1, getCharPlayerIsTargeting(PLAYER_HANDLE)) then
+        local handle = GetNearestPed(fov)
+        if handle ~= -1 then
+            local myPos = {getActiveCameraCoordinates()}
+            local enPos = {GetBodyPartCoordinates(3, handle)}
+            local vector = {myPos[1] - enPos[1], myPos[2] - enPos[2], myPos[3] - enPos[3]}
+            if isWidescreenOnInOptions() then coefficentZ = 0.0778 else coefficentZ = 0.103 end
+            local angle = {(math.atan2(vector[2], vector[1]) + 0.04253), (math.atan2((math.sqrt((math.pow(vector[1], 2) + math.pow(vector[2], 2)))), vector[3]) - math.pi / 2 - coefficentZ)}
+            local view = {fix(representIntAsFloat(readMemory(0xB6F258, 4, false))), fix(representIntAsFloat(readMemory(0xB6F248, 4, false)))}
+            local difference = {angle[1] - view[1], angle[2] - view[2]}
+            local smooth = {difference[1] / speed, difference[2] / speed}
+            setCameraPositionUnfixed((view[2] + smooth[2]), (view[1] + smooth[1]))
+        end
+    end
+    return false
+end
+
+function getPlayerForSilentRage()
+    local mDist = 9999
+    local id = -1
+    local mx, my, mz = getCharCoordinates(PLAYER_PED)
+    for i = 0, sampGetMaxPlayerId(true) do
+        if sampIsPlayerConnected(i) and not sampIsPlayerPaused(i) then
+            local _, ped = sampGetCharHandleBySampPlayerId(i)
+            if _ and ped ~= PLAYER_PED and not isCharDead(ped) then
+                local x, y, z = getCharCoordinates(ped)
+                local dist = getDistanceBetweenCoords3d(mx, my, mz, x, y, z)
+                if dist < mDist then
+                    mDist = dist
+                    id = i
+                end
+            end
+        end
+    end
+    return id
+end
+
+function vect3_length(x, y, z)
+    return math.sqrt(x * x + y * y + z * z)
+end
+
+local weapons = {
+    {
+        id = 22,
+        delay = 160,
+        dmg = 8.25,
+        distance = 35,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 23,
+        delay = 120,
+        dmg = 13.2,
+        distance = 35,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 24,
+        delay = 800,
+        dmg = 46.2,
+        distance = 35,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 25,
+        delay = 800,
+        dmg = 3.3,
+        distance = 40,
+        camMode = 53,
+        weaponState = 1
+    },
+    {
+        id = 26,
+        delay = 120,
+        dmg = 3.3,
+        distance = 35,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 27,
+        delay = 120,
+        dmg = 4.95,
+        distance = 40,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 28,
+        delay = 50,
+        dmg = 6.6,
+        distance = 35,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 29,
+        delay = 90,
+        dmg = 8.25,
+        distance = 45,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 30,
+        delay = 90,
+        dmg = 9.9,
+        distance = 70,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 31,
+        delay = 90,
+        dmg = 9.9,
+        distance = 90,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 32,
+        delay = 70,
+        dmg = 6.6,
+        distance = 35,
+        camMode = 53,
+        weaponState = 2
+    },
+    {
+        id = 33,
+        delay = 800,
+        dmg = 24.75,
+        distance = 100,
+        camMode = 53,
+        weaponState = 1
+    },
+    {
+        id = 34,
+        delay = 900,
+        dmg = 41.25,
+        distance = 320,
+        camMode = 7,
+        weaponState = 1
+    },
+    {
+        id = 38,
+        delay = 20,
+        dmg = 46.2,
+        distance = 75,
+        camMode = 53,
+        weaponState = 2
+    },
+
+}
+
+function getWeaponInfoById(id)
+    for k, weapon in pairs(weapons) do
+        if weapon.id == id then
+            return weapon
+        end
+    end
+    return nil
+end
